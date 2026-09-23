@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ObraGeo — La Brigada que diseña el Parque Renacer</title>
+<meta name="description" content="Aplicación educativa de geometría: mide, clasifica y diseña un parque en 5 misiones. Grados 6° a 8°.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js"></script>
+
+<style>
+  :root{
+    --azul-plano:#0F3B5C;
+    --azul-plano-2:#154C74;
+    --azul-plano-3:#1C6091;
+    --linea-plano:#DCEEFF;
+    --linea-plano-tenue:rgba(220,238,255,0.45);
+    --papel:#FBF6E8;
+    --papel-sombra:#EFE6CC;
+    --tinta:#22303F;
+    --tinta-suave:#51606E;
+    --naranja:#E2622C;
+    --naranja-oscuro:#B94A1E;
+    --amarillo:#F2B134;
+    --verde:#2E8B57;
+    --verde-claro:#DCF3E4;
+    --rojo:#D64550;
+    --rojo-claro:#FBE3E4;
+    --cian:#3AA6B9;
+    --radio-hoja:14px;
+    --sombra: 0 14px 30px rgba(9,29,46,0.28);
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:90px;}
+  body{
+    margin:0;
+    color:var(--linea-plano);
+    background:
+      linear-gradient(180deg, rgba(9,26,42,0.35), rgba(9,26,42,0.55)),
+      repeating-linear-gradient(0deg, transparent, transparent 27px, var(--linea-plano-tenue) 28px),
+      repeating-linear-gradient(90deg, transparent, transparent 27px, var(--linea-plano-tenue) 28px),
+      linear-gradient(160deg, var(--azul-plano-2) 0%, var(--azul-plano) 60%, #0A2A43 100%);
+    background-attachment: fixed;
+    min-height:100vh;
+    padding: calc(16px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));
+    line-height:1.55;
+  }
+  h1,h2,h3,h4{ font-family:'Space Grotesk', sans-serif; margin:0; color:var(--tinta);}
+  .on-plano h1, .on-plano h2, .on-plano h3, .on-plano h4{ color:#FFFFFF; }
+  p{margin:0 0 10px;}
+  a{color:inherit;}
+  .skip-link{
+    position:absolute; left:-9999px; top:0; background:var(--amarillo); color:#1a1a1a;
+    padding:10px 16px; border-radius:0 0 10px 0; font-weight:700; z-index:100;
+  }
+  .skip-link:focus{ left:0; }
+  button{ font-family:inherit; }
+  button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible{
+    outline:3px solid var(--amarillo); outline-offset:2px;
+  }
+  .wrap{ max-width:980px; margin:0 auto; }
+
+  /* ============ CAJETÍN / ENCABEZADO ============ */
+  .cajetin{
+    background: var(--papel);
+    color: var(--tinta);
+    border-radius: var(--radio-hoja);
+    box-shadow: var(--sombra);
+    padding:18px 22px;
+    display:grid;
+    grid-template-columns: auto 1fr auto;
+    gap:16px;
+    align-items:center;
+    margin-bottom:14px;
+    border:1px solid rgba(0,0,0,0.06);
+  }
+  .cajetin .compas{ width:52px; height:52px; flex:none; }
+  .cajetin h1{ font-size:1.5rem; letter-spacing:-0.01em; }
+  .cajetin .subt{ font-size:0.88rem; color:var(--tinta-suave); font-weight:500; margin-top:2px;}
+  .cajetin .meta{
+    display:flex; flex-direction:column; gap:2px; text-align:right; font-size:0.78rem; color:var(--tinta-suave);
+    border-left:2px dashed #CDBF9A; padding-left:14px;
+  }
+  .cajetin .meta strong{ color:var(--tinta); font-size:0.85rem; }
+
+  /* ============ SENDERO DE MISIONES (NAV) ============ */
+  .sendero{
+    background:rgba(11,35,55,0.55);
+    border:1px solid rgba(220,238,255,0.25);
+    border-radius: var(--radio-hoja);
+    padding:14px 16px 10px;
+    margin-bottom:18px;
+    backdrop-filter: blur(2px);
+  }
+  .sendero-cabecera{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;}
+  .sendero-titulo{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:0.95rem; color:#fff;}
+  .progreso-total{ font-size:0.82rem; color:var(--linea-plano); display:flex; align-items:center; gap:8px; }
+  .progreso-barra{ width:120px; height:8px; border-radius:6px; background:rgba(255,255,255,0.18); overflow:hidden;}
+  .progreso-barra-fill{ height:100%; width:0%; background:linear-gradient(90deg, var(--amarillo), var(--naranja)); transition:width .6s ease; }
+
+  .estaciones{ display:flex; gap:10px; overflow-x:auto; padding:6px 2px 8px; scrollbar-width:thin; }
+  .estacion{
+    flex:none;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    background:rgba(255,255,255,0.06);
+    border:2px solid rgba(220,238,255,0.3);
+    border-radius:16px;
+    padding:10px 14px;
+    cursor:pointer;
+    color:var(--linea-plano);
+    min-width:108px;
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .estacion:hover:not(.bloqueada){ transform:translateY(-3px); border-color:var(--amarillo); }
+  .estacion .num{
+    width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--azul-plano-3); font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1rem;
+    border:2px solid rgba(255,255,255,0.4);
+  }
+  .estacion.activa{ background:rgba(242,177,52,0.18); border-color:var(--amarillo); }
+  .estacion.activa .num{ background:var(--amarillo); color:#1a1a1a; border-color:#fff; }
+  .estacion.completa .num{ background:var(--verde); border-color:#fff; }
+  .estacion.bloqueada{ opacity:0.55; cursor:not-allowed; }
+  .estacion.bloqueada .num{ background:rgba(255,255,255,0.15); }
+  .estacion-nombre{ font-size:0.74rem; text-align:center; font-weight:600; line-height:1.2; }
+  .estacion-estrellas{ font-size:0.78rem; letter-spacing:1px; color:var(--amarillo); min-height:14px; }
+
+  /* ============ HOJAS DE PLANO (secciones) ============ */
+  .tab-content{ display:none; }
+  .tab-content.active{ display:block; animation:aparecer .35s ease; }
+  @keyframes aparecer{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+  @media (prefers-reduced-motion: reduce){ .tab-content.active{ animation:none; } }
+
+  .hoja{
+    background:var(--papel);
+    color:var(--tinta);
+    border-radius: var(--radio-hoja);
+    box-shadow: var(--sombra);
+    padding:26px;
+    margin-bottom:18px;
+    position:relative;
+  }
+  .hoja::before{
+    content:"";
+    position:absolute; top:14px; left:14px; right:14px; bottom:14px;
+    border:1px dashed #D8CBA4; border-radius:8px; pointer-events:none;
+  }
+  .hoja > *{ position:relative; }
+  .mision-encabezado{ display:flex; align-items:flex-start; gap:14px; margin-bottom:14px; flex-wrap:wrap;}
+  .mision-icono{ font-size:2.1rem; line-height:1; }
+  .mision-encabezado h2{ font-size:1.4rem; margin-bottom:4px; }
+  .mision-narrativa{ font-size:0.95rem; color:var(--tinta-suave); }
+
+  .grid-2{ display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:18px; }
+
+  .ficha{
+    background:#fff;
+    border:1px solid #E7DCB8;
+    border-left:5px solid var(--azul-plano-3);
+    border-radius:12px;
+    padding:16px 18px;
+    margin-bottom:14px;
+  }
+  .ficha h3{ font-size:1.02rem; margin-bottom:8px; }
+  .ficha ul{ margin:6px 0 0 18px; padding:0; font-size:0.9rem; }
+  .ficha li{ margin-bottom:4px; }
+  .formula{
+    display:inline-block; background:#F3EFDD; border:1px solid #D8CBA4; border-radius:8px;
+    padding:5px 10px; margin:4px 6px 0 0; font-weight:600; color:var(--azul-plano);
+  }
+
+  /* Diagramas SVG */
+  .diagrama-marco{ background:#fff; border:1px solid #E7DCB8; border-radius:12px; padding:10px; margin:0 auto 10px; max-width:260px; }
+  svg.diagrama{ width:100%; height:auto; display:block; }
+  .dim-label{ font-family:'IBM Plex Sans',sans-serif; font-size:11px; fill:var(--tinta); font-weight:600; }
+
+  /* Mesa de diseño (laboratorio interactivo) */
+  .mesa{
+    background: linear-gradient(180deg, #EAF6FA, #DFF0F5);
+    border:2px solid var(--cian);
+    border-radius:14px;
+    padding:18px;
+    margin:14px 0 18px;
+  }
+  .mesa h3{ color:var(--azul-plano); font-size:1.02rem; margin-bottom:10px; }
+  .campo{ margin-bottom:10px; }
+  .campo label{ display:block; font-size:0.85rem; font-weight:600; margin-bottom:3px; }
+  .campo input, .campo select{
+    width:100%; padding:9px 12px; border-radius:9px; border:1px solid #B9C9D0; font-size:0.95rem; background:#fff;
+  }
+  .btn{
+    display:inline-block; width:100%; text-align:center;
+    background:var(--naranja); color:#fff; border:none; border-radius:50px;
+    padding:12px 18px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:0.98rem;
+    cursor:pointer; transition:background .15s, transform .1s; margin-top:6px;
+  }
+  .btn:hover{ background:var(--naranja-oscuro); }
+  .btn:active{ transform:scale(0.98); }
+  .btn.secundario{ background:var(--azul-plano-3); }
+  .btn.secundario:hover{ background:var(--azul-plano); }
+  .btn.ancho-auto{ width:auto; padding:12px 26px; }
+  .resultado{
+    background:var(--verde-claro); border:2px solid var(--verde); color:#1B5E3A;
+    border-radius:10px; padding:10px; margin-top:10px; font-weight:700; text-align:center; font-size:0.95rem;
+  }
+  .resultado.secundario{ background:#E4EEF9; border-color:var(--azul-plano-3); color:var(--azul-plano); }
+
+  /* Reto / quiz */
+  .reto-titulo{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin:22px 0 12px; flex-wrap:wrap; }
+  .reto-titulo h3{ font-size:1.08rem; }
+  .chip-info{ font-size:0.78rem; background:#F3EFDD; border:1px solid #D8CBA4; border-radius:50px; padding:5px 12px; color:var(--tinta-suave); }
+
+  .quiz-card{
+    background:#fff; border:2px solid #E1E9EC; border-radius:14px; padding:18px; margin-bottom:16px;
+    transition: border-color .25s;
+  }
+  .quiz-card.ok{ border-color:var(--verde); }
+  .quiz-card.mal{ border-color:var(--rojo); }
+  .quiz-card h4{ font-size:1rem; font-weight:600; margin-bottom:10px; color:var(--tinta); }
+  .options-group{ display:flex; flex-direction:column; gap:8px; }
+  .option-btn{
+    background:#F7F8F5; border:2px solid #E1E9EC; border-radius:10px; padding:10px 14px;
+    text-align:left; font-size:0.92rem; font-weight:600; cursor:pointer; color:var(--tinta);
+    transition: background .15s, border-color .15s;
+  }
+  .option-btn:hover:not(:disabled){ background:#EFF6FB; border-color:var(--cian); }
+  .option-btn.selected{ background:#E4EEF9; border-color:var(--azul-plano-3); }
+  .option-btn.marca-correcta{ background:var(--verde-claro); border-color:var(--verde); color:#1B5E3A; }
+  .option-btn.marca-incorrecta{ background:var(--rojo-claro); border-color:var(--rojo); color:#8C2A32; }
+  .option-btn:disabled{ cursor:default; }
+  .feedback-msg{ margin-top:10px; padding:10px 12px; border-radius:9px; font-size:0.88rem; font-weight:600; display:none; }
+  .feedback-msg.correct{ background:var(--verde-claro); color:#1B5E3A; border:1px solid var(--verde); }
+  .feedback-msg.incorrect{ background:var(--rojo-claro); color:#8C2A32; border:1px solid var(--rojo); }
+  .feedback-msg.warn{ background:#FFF3D6; color:#7A5200; border:1px solid var(--amarillo); }
+
+  .resumen-mision{
+    border-radius:14px; padding:20px; text-align:center; margin-top:6px; display:none;
+  }
+  .resumen-mision.exito{ background:linear-gradient(135deg,#DCF3E4,#CDEBE0); border:2px dashed var(--verde); }
+  .resumen-mision.reintentar{ background:#FFF3D6; border:2px dashed var(--amarillo); }
+  .resumen-mision h3{ font-size:1.2rem; margin-bottom:6px; }
+  .resumen-acciones{ display:flex; gap:10px; justify-content:center; margin-top:12px; flex-wrap:wrap; }
+
+  footer{ text-align:center; font-size:0.78rem; color:var(--linea-plano-tenue); padding:16px 8px 4px; }
+
+  @media (max-width: 620px){
+    .cajetin{ grid-template-columns:1fr; text-align:center; }
+    .cajetin .meta{ border-left:none; border-top:2px dashed #CDBF9A; padding-left:0; padding-top:10px; text-align:center; }
+  }
+</style>
+</head>
+<body>
+
+<a href="#contenido-principal" class="skip-link">Saltar al contenido principal</a>
+
+<div class="wrap">
+
+  <header class="cajetin">
+    <svg class="compas" viewBox="0 0 60 60" role="img" aria-label="Compás de dibujo técnico">
+      <circle cx="30" cy="30" r="26" fill="none" stroke="#0F3B5C" stroke-width="2.5"/>
+      <circle cx="30" cy="30" r="3" fill="#E2622C"/>
+      <line x1="30" y1="30" x2="30" y2="7" stroke="#0F3B5C" stroke-width="2.5"/>
+      <line x1="30" y1="30" x2="49" y2="42" stroke="#E2622C" stroke-width="2.5"/>
+      <circle cx="30" cy="7" r="2.4" fill="#0F3B5C"/>
+      <circle cx="49" cy="42" r="2.4" fill="#E2622C"/>
+    </svg>
+    <div>
+      <h1>ObraGeo</h1>
+      <p class="subt">La brigada que diseña el Parque Renacer — geometría en 5 misiones</p>
+    </div>
+    <div class="meta">
+      <span>Diseñadora <strong>Jonaidys Anaya</strong></span>
+      <span>Grados <strong>6° a 8°</strong></span>
+      <span>Escala <strong>1:100</strong></span>
+    </div>
+  </header>
+
+  <nav class="sendero" aria-label="Progreso de misiones">
+    <div class="sendero-cabecera">
+      <span class="sendero-titulo">🗺️ Bitácora de la brigada</span>
+      <span class="progreso-total">
+        Avance de obra
+        <span class="progreso-barra"><span class="progreso-barra-fill" id="progresoFill"></span></span>
+        <strong id="progresoPct">0%</strong>
+      </span>
+    </div>
+    <div class="estaciones" id="estaciones" role="tablist"></div>
+  </nav>
+
+  <main id="contenido-principal">
+    <div id="tab-portada" class="tab-content active"></div>
+    <!-- las misiones se insertan dinámicamente aquí -->
+    <div id="misiones-contenedor"></div>
+    <div id="tab-docente" class="tab-content"></div>
+  </main>
+
+  <footer>
+    ObraGeo — material educativo original para grados 6° a 8°. El Parque Renacer y la brigada son un escenario ficticio creado para practicar geometría.
+  </footer>
+</div>
+
+<script>
+/* =========================================================================
+   UTILIDADES GENERALES
+   ========================================================================= */
+function barajar(lista){
+  const arr = lista.slice();
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function tomarAlAzar(lista, n){
+  return barajar(lista).slice(0, Math.min(n, lista.length));
+}
+function renderMath(scopeEl){
+  if(window.renderMathInElement){
+    renderMathInElement(scopeEl || document.body, {
+      delimiters: [
+        {left:'\\(', right:'\\)', display:false},
+        {left:'\\[', right:'\\]', display:true}
+      ],
+      throwOnError:false
+    });
+  }
+}
+function lanzarConfeti(){
+  if(typeof confetti === 'function'){
+    confetti({ particleCount:120, spread:80, origin:{y:0.6}, colors:['#F2B134','#E2622C','#2E8B57','#3AA6B9','#DCEEFF'] });
+  }
+}
+
+/* =========================================================================
+   GENERADORES DE DIAGRAMAS SVG (líneas de plano técnico)
+   ========================================================================= */
+function svgWrap(inner, viewBox){
+  return `<svg class="diagrama" viewBox="${viewBox || '0 0 240 170'}" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="false">${inner}</svg>`;
+}
+function hDim(x1, x2, y, label){
+  return `
+    <line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#0F3B5C" stroke-width="1.4"/>
+    <line x1="${x1}" y1="${y-5}" x2="${x1}" y2="${y+5}" stroke="#0F3B5C" stroke-width="1.4"/>
+    <line x1="${x2}" y1="${y-5}" x2="${x2}" y2="${y+5}" stroke="#0F3B5C" stroke-width="1.4"/>
+    <text x="${(x1+x2)/2}" y="${y-8}" text-anchor="middle" class="dim-label">${label}</text>`;
+}
+function vDim(y1, y2, x, label){
+  return `
+    <line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#0F3B5C" stroke-width="1.4"/>
+    <line x1="${x-5}" y1="${y1}" x2="${x+5}" y2="${y1}" stroke="#0F3B5C" stroke-width="1.4"/>
+    <line x1="${x-5}" y1="${y2}" x2="${x+5}" y2="${y2}" stroke="#0F3B5C" stroke-width="1.4"/>
+    <text x="${x-9}" y="${(y1+y2)/2}" text-anchor="middle" class="dim-label" transform="rotate(-90 ${x-9} ${(y1+y2)/2})">${label}</text>`;
+}
+function svgRectangulo(base, altura, unidad){
+  const maxW=150, maxH=80;
+  const escala = Math.min(maxW/base, maxH/altura);
+  const w=base*escala, h=altura*escala;
+  const x0=(240-w)/2, y0=20;
+  let inner = `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.2"/>`;
+  inner += hDim(x0, x0+w, y0+h+22, `${base} ${unidad}`);
+  inner += vDim(y0, y0+h, x0-18, `${altura} ${unidad}`);
+  return svgWrap(inner);
+}
+function svgTriangulo(base, altura, unidad){
+  const maxW=150, maxH=80;
+  const escala = Math.min(maxW/base, maxH/altura);
+  const w=base*escala, h=altura*escala;
+  const x0=(240-w)/2, y0=20, yBase=y0+h;
+  const apiceX = x0 + w*0.38;
+  let inner = `<polygon points="${x0},${yBase} ${x0+w},${yBase} ${apiceX},${y0}" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.2"/>`;
+  inner += `<line x1="${apiceX}" y1="${y0}" x2="${apiceX}" y2="${yBase}" stroke="#E2622C" stroke-width="1.4" stroke-dasharray="4 3"/>`;
+  inner += hDim(x0, x0+w, yBase+22, `${base} ${unidad}`);
+  inner += vDim(y0, yBase, apiceX+16, `${altura} ${unidad}`);
+  return svgWrap(inner);
+}
+function svgRombo(D, d, unidad){
+  const maxD=150, maxd=90;
+  const escala = Math.min(maxD/D, maxd/d);
+  const w=D*escala, h=d*escala;
+  const cx=120, cy=20+h/2;
+  const pts = `${cx},${cy-h/2} ${cx+w/2},${cy} ${cx},${cy+h/2} ${cx-w/2},${cy}`;
+  let inner = `<polygon points="${pts}" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.2"/>`;
+  inner += `<line x1="${cx-w/2}" y1="${cy}" x2="${cx+w/2}" y2="${cy}" stroke="#E2622C" stroke-width="1.4" stroke-dasharray="4 3"/>`;
+  inner += `<line x1="${cx}" y1="${cy-h/2}" x2="${cx}" y2="${cy+h/2}" stroke="#3AA6B9" stroke-width="1.4" stroke-dasharray="4 3"/>`;
+  inner += `<text x="${cx}" y="${cy+h/2+24}" text-anchor="middle" class="dim-label">D = ${D} ${unidad}</text>`;
+  inner += `<text x="${cx+w/2+10}" y="${cy+4}" text-anchor="start" class="dim-label">d = ${d} ${unidad}</text>`;
+  return svgWrap(inner);
+}
+function svgCirculo(opts){
+  const {r=null, D=null, mostrar='radio'} = opts;
+  const cx=120, cy=90, R=55;
+  let inner = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.2"/>
+    <circle cx="${cx}" cy="${cy}" r="2.6" fill="#0F3B5C"/>`;
+  if(mostrar==='radio' || mostrar==='ambos'){
+    inner += `<line x1="${cx}" y1="${cy}" x2="${cx+R}" y2="${cy}" stroke="#E2622C" stroke-width="2.2"/>
+      <text x="${cx+R/2}" y="${cy-9}" text-anchor="middle" class="dim-label">${r!==null ? 'r = '+r+' cm' : 'r'}</text>`;
+  }
+  if(mostrar==='diametro' || mostrar==='ambos'){
+    inner += `<line x1="${cx-R}" y1="${cy}" x2="${cx+R}" y2="${cy}" stroke="#3AA6B9" stroke-width="2.2" ${mostrar==='ambos'?'stroke-dasharray="5 4"':''}/>
+      <text x="${cx}" y="${cy+R+22}" text-anchor="middle" class="dim-label">${D!==null ? 'D = '+D+' cm' : 'D'}</text>`;
+  }
+  return svgWrap(inner, '0 0 240 180');
+}
+function svgPoligonoRegular(n, irregular){
+  const cx=120, cy=92, R=58;
+  let pts=[];
+  for(let i=0;i<n;i++){
+    const angulo = -Math.PI/2 + i*(2*Math.PI/n);
+    let radio = R;
+    if(irregular){ radio = R * (0.72 + 0.34*Math.abs(Math.sin(i*2.1+0.6))); }
+    pts.push([ (cx+radio*Math.cos(angulo)).toFixed(1), (cy+radio*Math.sin(angulo)).toFixed(1) ]);
+  }
+  const atributo = pts.map(p=>p.join(',')).join(' ');
+  const inner = `<polygon points="${atributo}" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.4" stroke-linejoin="round"/>`;
+  return svgWrap(inner, '0 0 240 184');
+}
+function svgPlano(x, y, oculto){
+  const cx=120, cy=95, escala=13;
+  const px = cx + x*escala, py = cy - y*escala;
+  const etiqueta = oculto ? '?' : `(${x}, ${y})`;
+  let inner = `
+    <line x1="8" y1="${cy}" x2="232" y2="${cy}" stroke="#0F3B5C" stroke-width="1.5"/>
+    <line x1="${cx}" y1="8" x2="${cx}" y2="182" stroke="#0F3B5C" stroke-width="1.5"/>
+    <text x="222" y="${cy-8}" class="dim-label">x</text>
+    <text x="${cx+8}" y="20" class="dim-label">y</text>`;
+  for(let i=-8;i<=8;i++){
+    if(i===0) continue;
+    inner += `<line x1="${cx+i*escala}" y1="${cy-3}" x2="${cx+i*escala}" y2="${cy+3}" stroke="#0F3B5C" stroke-width="1"/>`;
+    inner += `<line x1="${cx-3}" y1="${cy+i*escala}" x2="${cx+3}" y2="${cy+i*escala}" stroke="#0F3B5C" stroke-width="1"/>`;
+  }
+  inner += `<circle cx="${px}" cy="${py}" r="4.5" fill="#E2622C"/>
+    <text x="${px+9}" y="${py-8}" class="dim-label">${etiqueta}</text>`;
+  return svgWrap(inner, '0 0 240 190');
+}
+/* Diagramas hechos a mano para clasificación de triángulos y cuadriláteros */
+function svgTrianguloClasif(tipo){
+  const base = `<svg class="diagrama" viewBox="0 0 240 170" xmlns="http://www.w3.org/2000/svg">`;
+  const fin = `</svg>`;
+  const tick = (x1,y1,x2,y2,dobles)=>{
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy);
+    const nx=-dy/len*5, ny=dx/len*5;
+    let s=`<line x1="${mx-nx}" y1="${my-ny}" x2="${mx+nx}" y2="${my+ny}" stroke="#E2622C" stroke-width="2"/>`;
+    if(dobles){
+      const ox=dx/len*4, oy=dy/len*4;
+      s+=`<line x1="${mx-nx-ox}" y1="${my-ny-oy}" x2="${mx+nx-ox}" y2="${my+ny-oy}" stroke="#E2622C" stroke-width="2"/>`;
+    }
+    return s;
+  };
+  if(tipo==='isosceles-rectangulo'){
+    return base + `
+      <polygon points="50,140 190,140 50,40" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.4"/>
+      <path d="M50,120 L70,120 L70,140" fill="none" stroke="#3AA6B9" stroke-width="2"/>
+      ${tick(50,140,190,140,false)}
+      ${tick(50,140,50,40,false)}
+      <text x="80" y="163" class="dim-label" text-anchor="middle">ángulo recto marcado en azul</text>
+    ` + fin;
+  }
+  if(tipo==='equilatero-acutangulo'){
+    return base + `
+      <polygon points="120,35 195,140 45,140" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.4"/>
+      ${tick(120,35,195,140,false)}
+      ${tick(195,140,45,140,false)}
+      ${tick(45,140,120,35,false)}
+      <text x="120" y="163" class="dim-label" text-anchor="middle">los 3 lados con la misma marca = iguales</text>
+    ` + fin;
+  }
+  if(tipo==='escaleno-obtusangulo'){
+    return base + `
+      <polygon points="40,120 175,150 150,45" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.4"/>
+      <path d="M75,122 A40,40 0 0 1 60,95" fill="none" stroke="#3AA6B9" stroke-width="2"/>
+      <text x="105" y="163" class="dim-label" text-anchor="middle">3 lados distintos y un ángulo mayor de 90°</text>
+    ` + fin;
+  }
+  return base + fin;
+}
+function svgCuadrilateroClasif(tipo){
+  const base = `<svg class="diagrama" viewBox="0 0 240 170" xmlns="http://www.w3.org/2000/svg">`;
+  const fin = `</svg>`;
+  const tick = (x1,y1,x2,y2)=>{
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy);
+    const nx=-dy/len*5, ny=dx/len*5;
+    return `<line x1="${mx-nx}" y1="${my-ny}" x2="${mx+nx}" y2="${my+ny}" stroke="#E2622C" stroke-width="2"/>`;
+  };
+  const arrow = (x1,y1,x2,y2)=>{
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy);
+    const ux=dx/len, uy=dy/len;
+    const ax1=mx-ux*8, ay1=my-uy*8, ax2=mx+ux*8, ay2=my+uy*8;
+    return `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="#3AA6B9" stroke-width="2.4" marker-end="url(#pf)"/>`;
+  };
+  const defs = `<defs><marker id="pf" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#3AA6B9"/></marker></defs>`;
+  if(tipo==='rombo'){
+    const p=[[120,35],[195,95],[120,155],[45,95]];
+    return base + defs + `
+      <polygon points="120,35 195,95 120,155 45,95" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.4"/>
+      ${tick(120,35,195,95)} ${tick(195,95,120,155)} ${tick(120,155,45,95)} ${tick(45,95,120,35)}
+      <text x="120" y="168" class="dim-label" text-anchor="middle">4 lados con la misma marca, sin ángulos rectos</text>
+    ` + fin;
+  }
+  if(tipo==='trapecio'){
+    return base + defs + `
+      <polygon points="70,50 170,50 205,140 35,140" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.4"/>
+      ${arrow(70,50,170,50)}
+      ${arrow(35,140,205,140)}
+      <text x="120" y="160" class="dim-label" text-anchor="middle">un solo par de lados con flechas (paralelos)</text>
+    ` + fin;
+  }
+  if(tipo==='trapezoide'){
+    return base + defs + `
+      <polygon points="90,40 190,70 165,150 55,120" fill="#EAF6FA" stroke="#0F3B5C" stroke-width="2.4"/>
+      <text x="120" y="165" class="dim-label" text-anchor="middle">ningún par de lados es paralelo</text>
+    ` + fin;
+  }
+  return base + fin;
+}
+
+/* =========================================================================
+   BANCO DE MISIONES: contenido, laboratorio y preguntas
+   ========================================================================= */
+const MISIONES = [
+  {
+    clave:'m1', numero:1, nombre:'Medir el terreno', icono:'📐', umbral:0.7, preguntasPorIntento:4,
+    narrativa:'La brigada recibió los planos de un lote irregular donde irá el Parque Renacer. Antes de construir nada, hay que calcular con precisión el perímetro y el área de cada sector del terreno.',
+    teoria: [
+      { titulo:'1. Perímetro', html:`<p>El perímetro es la longitud total del contorno de una figura: se suman todos sus lados.</p><div class="formula">\\(P = L_1+L_2+L_3+\\dots\\)</div>` },
+      { titulo:'2. Fórmulas de área', html:`<p>El área mide la superficie que ocupa una figura plana:</p>
+        <ul>
+          <li>Cuadrado: \\(A=l\\times l\\)</li>
+          <li>Rectángulo: \\(A=\\text{base}\\times\\text{altura}\\)</li>
+          <li>Triángulo: \\(A=\\dfrac{\\text{base}\\times\\text{altura}}{2}\\)</li>
+          <li>Rombo: \\(A=\\dfrac{D\\times d}{2}\\)</li>
+        </ul>` },
+      { titulo:'3. Conversión de unidades', html:`<p>Para pasar de metros a centímetros cuadrados:</p><div class="formula">1 m = 100 cm</div><div class="formula">1 m² = 10.000 cm²</div>` }
+    ],
+    labHTML:`
+      <h3>🧮 Mesa de diseño: calcula un sector del terreno</h3>
+      <div class="campo">
+        <label for="m1-figura">Figura del lote</label>
+        <select id="m1-figura">
+          <option value="rectangulo">Rectángulo</option>
+          <option value="triangulo">Triángulo</option>
+          <option value="rombo">Rombo</option>
+        </select>
+      </div>
+      <div class="grid-2">
+        <div class="campo"><label id="m1-lbl1" for="m1-p1">Base (m)</label><input type="number" id="m1-p1" value="6" min="1"></div>
+        <div class="campo"><label id="m1-lbl2" for="m1-p2">Altura (m)</label><input type="number" id="m1-p2" value="4" min="1"></div>
+      </div>
+      <button class="btn" id="m1-calcular">Calcular área y convertir a cm²</button>
+      <div class="resultado" id="m1-res-area">Área: 24.00 m²</div>
+      <div class="resultado secundario" id="m1-res-conv">Equivalente: 240.000 cm²</div>
+    `,
+    initLab(){
+      const figuraSel = document.getElementById('m1-figura');
+      const lbl1 = document.getElementById('m1-lbl1');
+      const lbl2 = document.getElementById('m1-lbl2');
+      const actualizarEtiquetas = () => {
+        if(figuraSel.value === 'rombo'){ lbl1.textContent='Diagonal mayor D (m)'; lbl2.textContent='Diagonal menor d (m)'; }
+        else { lbl1.textContent='Base (m)'; lbl2.textContent='Altura (m)'; }
+      };
+      figuraSel.addEventListener('change', actualizarEtiquetas);
+      document.getElementById('m1-calcular').addEventListener('click', () => {
+        const fig = figuraSel.value;
+        const p1 = parseFloat(document.getElementById('m1-p1').value) || 0;
+        const p2 = parseFloat(document.getElementById('m1-p2').value) || 0;
+        let area = 0;
+        if(fig==='rectangulo') area = p1*p2;
+        else area = (p1*p2)/2;
+        document.getElementById('m1-res-area').textContent = `Área: ${area.toFixed(2)} m²`;
+        document.getElementById('m1-res-conv').textContent = `Equivalente: ${(area*10000).toLocaleString('es-CO')} cm²`;
+      });
+      actualizarEtiquetas();
+    },
+    banco:[
+      { id:'m1-1', diagrama:()=>svgRectangulo(8,5,'m'),
+        prompt:'Un sector rectangular del parque mide 8 m de base y 5 m de altura. ¿Cuál es su área?',
+        opciones:[
+          {texto:'40 m²', correcta:true, feedback:'Correcto: multiplicaste base × altura = 8 × 5 = 40 m².'},
+          {texto:'26 m²', correcta:false, feedback:'Ese es el perímetro (8+8+5+5=26), no el área. El área se calcula multiplicando, no sumando los lados.'},
+          {texto:'13 m²', correcta:false, feedback:'Sumaste base + altura (8+5=13). El área de un rectángulo es un producto: base × altura.'}
+        ]},
+      { id:'m1-2', diagrama:()=>svgTriangulo(10,6,'cm'),
+        prompt:'Un lote triangular tiene base 10 cm y altura 6 cm. ¿Cuál es su área?',
+        opciones:[
+          {texto:'30 cm²', correcta:true, feedback:'Correcto: base × altura ÷ 2 = 10 × 6 ÷ 2 = 30 cm².'},
+          {texto:'60 cm²', correcta:false, feedback:'Multiplicaste base × altura pero olvidaste dividir entre 2: en un triángulo esa división siempre es necesaria.'},
+          {texto:'16 cm²', correcta:false, feedback:'Sumaste base + altura (10+6=16) en lugar de multiplicarlas y dividir entre 2.'}
+        ]},
+      { id:'m1-3', diagrama:()=>svgRombo(12,8,'cm'),
+        prompt:'Un rombo decorativo tiene diagonales D=12 cm y d=8 cm. ¿Cuál es su área?',
+        opciones:[
+          {texto:'48 cm²', correcta:true, feedback:'Correcto: (D × d) ÷ 2 = (12 × 8) ÷ 2 = 48 cm².'},
+          {texto:'96 cm²', correcta:false, feedback:'Multiplicaste las diagonales pero olvidaste dividir entre 2, como pide la fórmula del rombo.'},
+          {texto:'20 cm²', correcta:false, feedback:'Sumaste las diagonales (12+8=20) en lugar de multiplicarlas.'}
+        ]},
+      { id:'m1-4', diagrama:null,
+        prompt:'Un sector del parque mide 3.5 m². ¿A cuántos cm² equivale?',
+        opciones:[
+          {texto:'35.000 cm²', correcta:true, feedback:'Correcto: 1 m² = 10.000 cm², entonces 3.5 × 10.000 = 35.000 cm².'},
+          {texto:'350 cm²', correcta:false, feedback:'Multiplicaste por 100, que es la conversión de metros a centímetros lineales, no de m² a cm².'},
+          {texto:'3.500 cm²', correcta:false, feedback:'Multiplicaste por 1.000. Como son unidades cuadradas, el factor correcto es ×10.000.'}
+        ]},
+      { id:'m1-5', diagrama:()=>svgRectangulo(9,9,'m'),
+        prompt:'La brigada quiere cercar un sector cuadrado de 9 m de lado. ¿Cuánto material de cerca (perímetro) se necesita?',
+        opciones:[
+          {texto:'36 m', correcta:true, feedback:'Correcto: P = 4 × lado = 4 × 9 = 36 m.'},
+          {texto:'81 m', correcta:false, feedback:'Eso es el área (9²=81), no el perímetro. Para cercar el terreno se necesita la longitud del contorno.'},
+          {texto:'18 m', correcta:false, feedback:'Solo sumaste dos lados (9+9=18). Un cuadrado tiene 4 lados iguales, no 2.'}
+        ]},
+      { id:'m1-6', diagrama:()=>svgRectangulo(7,3,'m'),
+        prompt:'Un camino rectangular mide 7 m de largo y 3 m de ancho. ¿Cuánto mide su perímetro?',
+        opciones:[
+          {texto:'20 m', correcta:true, feedback:'Correcto: P = 2 × (base + altura) = 2 × (7+3) = 20 m.'},
+          {texto:'21 m', correcta:false, feedback:'Multiplicaste base × altura (7×3=21), pero eso es el área, no el perímetro.'},
+          {texto:'10 m', correcta:false, feedback:'Sumaste solo un largo y un ancho (7+3=10); el perímetro incluye los 4 lados del rectángulo.'}
+        ]}
+    ]
+  },
+  {
+    clave:'m2', numero:2, nombre:'La fuente circular', icono:'⭕', umbral:0.7, preguntasPorIntento:4,
+    narrativa:'El corazón del parque será una fuente circular. La brigada necesita dominar radio, diámetro y circunferencia para pedir el material exacto de baldosa y borde.',
+    teoria:[
+      { titulo:'1. Elementos del círculo', html:`<p><strong>Radio (r):</strong> distancia del centro a cualquier punto del borde.</p><p><strong>Diámetro (D):</strong> cruza todo el círculo pasando por el centro.</p><div class="formula">\\(D = 2r\\)</div>` },
+      { titulo:'2. Circunferencia y área', html:`<p>Usando \\(\\pi \\approx 3.14\\):</p><div class="formula">\\(C = 2\\pi r\\)</div><div class="formula">\\(A = \\pi r^2\\)</div>` }
+    ],
+    labHTML:`
+      <h3>🧮 Mesa de diseño: dimensiona la fuente</h3>
+      <div class="campo"><label for="m2-r">Radio de la fuente (cm)</label><input type="number" id="m2-r" value="5" min="1"></div>
+      <button class="btn" id="m2-calcular">Calcular diámetro, circunferencia y área</button>
+      <div class="resultado" id="m2-res-d">Diámetro: 10.00 cm</div>
+      <div class="resultado secundario" id="m2-res-c">Circunferencia: 31.40 cm</div>
+      <div class="resultado secundario" id="m2-res-a">Área: 78.50 cm²</div>
+    `,
+    initLab(){
+      document.getElementById('m2-calcular').addEventListener('click', () => {
+        const r = parseFloat(document.getElementById('m2-r').value) || 0;
+        document.getElementById('m2-res-d').textContent = `Diámetro: ${(2*r).toFixed(2)} cm`;
+        document.getElementById('m2-res-c').textContent = `Circunferencia: ${(2*3.14*r).toFixed(2)} cm`;
+        document.getElementById('m2-res-a').textContent = `Área: ${(3.14*r*r).toFixed(2)} cm²`;
+      });
+    },
+    banco:[
+      { id:'m2-1', diagrama:()=>svgCirculo({r:7, mostrar:'radio'}),
+        prompt:'El radio de la fuente es 7 cm. ¿Cuánto mide su diámetro?',
+        opciones:[
+          {texto:'14 cm', correcta:true, feedback:'Correcto: D = 2 × r = 2 × 7 = 14 cm.'},
+          {texto:'3.5 cm', correcta:false, feedback:'Dividiste el radio entre 2 en lugar de multiplicarlo por 2.'},
+          {texto:'49 cm', correcta:false, feedback:'Elevaste el radio al cuadrado (7²=49); eso serviría para el área, no para el diámetro.'}
+        ]},
+      { id:'m2-2', diagrama:()=>svgCirculo({D:20, mostrar:'diametro'}),
+        prompt:'El borde decorativo de la fuente mide 20 cm de diámetro. ¿Cuál es su radio?',
+        opciones:[
+          {texto:'10 cm', correcta:true, feedback:'Correcto: r = D ÷ 2 = 20 ÷ 2 = 10 cm.'},
+          {texto:'40 cm', correcta:false, feedback:'Multiplicaste el diámetro por 2 en lugar de dividirlo entre 2.'},
+          {texto:'200 cm', correcta:false, feedback:'Multiplicaste diámetro × 10; esa operación no corresponde a ninguna fórmula del círculo.'}
+        ]},
+      { id:'m2-3', diagrama:()=>svgCirculo({r:5, mostrar:'radio'}),
+        prompt:'Con radio 5 cm y π ≈ 3.14, ¿cuánto mide la circunferencia de la fuente?',
+        opciones:[
+          {texto:'31.4 cm', correcta:true, feedback:'Correcto: C = 2πr = 2 × 3.14 × 5 = 31.4 cm.'},
+          {texto:'15.7 cm', correcta:false, feedback:'Calculaste π × r (3.14×5=15.7) pero olvidaste multiplicar por 2, que exige la fórmula de la circunferencia.'},
+          {texto:'78.5 cm', correcta:false, feedback:'Ese valor corresponde al área del círculo (πr²), no a la circunferencia (2πr).'}
+        ]},
+      { id:'m2-4', diagrama:()=>svgCirculo({r:4, mostrar:'radio'}),
+        prompt:'Con radio 4 cm y π ≈ 3.14, ¿cuál es el área de la fuente?',
+        opciones:[
+          {texto:'50.24 cm²', correcta:true, feedback:'Correcto: A = πr² = 3.14 × 4² = 3.14 × 16 = 50.24 cm².'},
+          {texto:'25.12 cm²', correcta:false, feedback:'Calculaste la circunferencia (2πr), no el área (πr²).'},
+          {texto:'16 cm²', correcta:false, feedback:'Solo elevaste el radio al cuadrado (4²=16) pero olvidaste multiplicar por π.'}
+        ]},
+      { id:'m2-5', diagrama:()=>svgCirculo({mostrar:'radio'}),
+        prompt:'¿Cómo se llama el segmento que va del centro a cualquier punto del borde del círculo, marcado en naranja en el plano?',
+        opciones:[
+          {texto:'Radio', correcta:true, feedback:'Correcto: el radio siempre une el centro con el borde de la circunferencia.'},
+          {texto:'Diámetro', correcta:false, feedback:'El diámetro atraviesa todo el círculo pasando por el centro, uniendo dos puntos opuestos del borde.'},
+          {texto:'Cuerda', correcta:false, feedback:'Una cuerda une dos puntos del borde, pero no necesariamente pasa por el centro.'}
+        ]},
+      { id:'m2-6', diagrama:()=>svgCirculo({D:18, mostrar:'diametro'}),
+        prompt:'El plano muestra un diámetro de 18 cm. ¿Cuánto mide el radio?',
+        opciones:[
+          {texto:'9 cm', correcta:true, feedback:'Correcto: r = D ÷ 2 = 18 ÷ 2 = 9 cm.'},
+          {texto:'36 cm', correcta:false, feedback:'Multiplicaste el diámetro por 2 en lugar de dividirlo entre 2.'},
+          {texto:'18 cm', correcta:false, feedback:'Confundiste el radio con el diámetro: son el mismo valor solo si divides el diámetro entre 2.'}
+        ]}
+    ]
+  },
+  {
+    clave:'m3', numero:3, nombre:'Clasificar los lotes', icono:'🔺', umbral:0.7, preguntasPorIntento:4,
+    narrativa:'Antes de asignar cada lote del parque (una plazoleta, un jardín, una zona de juegos), la brigada debe clasificar correctamente los triángulos y cuadriláteros que aparecen en los planos.',
+    teoria:[
+      { titulo:'1. Triángulos por sus lados', html:`<ul><li><strong>Equilátero:</strong> 3 lados iguales</li><li><strong>Isósceles:</strong> 2 lados iguales</li><li><strong>Escaleno:</strong> 3 lados diferentes</li></ul>` },
+      { titulo:'2. Triángulos por sus ángulos', html:`<ul><li><strong>Acutángulo:</strong> los 3 ángulos son agudos (&lt;90°)</li><li><strong>Rectángulo:</strong> tiene un ángulo de 90°</li><li><strong>Obtusángulo:</strong> tiene un ángulo mayor de 90°</li></ul>` },
+      { titulo:'3. Cuadriláteros', html:`<ul><li><strong>Paralelogramos:</strong> lados opuestos paralelos (cuadrado, rectángulo, rombo, romboide)</li><li><strong>Trapecio:</strong> solo 1 par de lados paralelos</li><li><strong>Trapezoide:</strong> ningún lado paralelo</li></ul>` }
+    ],
+    labHTML:`
+      <h3>🔍 Mesa de diseño: identifica la figura</h3>
+      <p style="font-size:0.9rem; color:var(--tinta-suave); margin-bottom:10px;">Observa cada lote del plano y anota mentalmente si sus lados son iguales o distintos, y si tiene algún ángulo recto u obtuso, antes de resolver los retos de abajo.</p>
+      <div class="grid-2">
+        <div class="diagrama-marco">${svgTrianguloClasif('equilatero-acutangulo')}</div>
+        <div class="diagrama-marco">${svgCuadrilateroClasif('trapecio')}</div>
+      </div>
+    `,
+    initLab(){},
+    banco:[
+      { id:'m3-1', diagrama:()=>svgTrianguloClasif('isosceles-rectangulo'),
+        prompt:'El lote de la caseta de vigilancia tiene esta forma triangular. ¿Cómo se clasifica según sus lados y ángulos?',
+        opciones:[
+          {texto:'Isósceles rectángulo', correcta:true, feedback:'Correcto: tiene 2 lados con la misma marca (isósceles) y un ángulo de 90° señalado en azul (rectángulo).'},
+          {texto:'Equilátero acutángulo', correcta:false, feedback:'Un equilátero tiene sus 3 lados iguales y todos sus ángulos agudos; aquí solo 2 lados son iguales y hay un ángulo recto.'},
+          {texto:'Escaleno obtusángulo', correcta:false, feedback:'Escaleno significa que ningún lado es igual, pero en la figura dos lados sí tienen la misma marca.'}
+        ]},
+      { id:'m3-2', diagrama:()=>svgTrianguloClasif('equilatero-acutangulo'),
+        prompt:'La plazoleta central tiene esta forma triangular con los 3 lados marcados igual. ¿Cómo se clasifica?',
+        opciones:[
+          {texto:'Equilátero acutángulo', correcta:true, feedback:'Correcto: los 3 lados iguales lo hacen equilátero, y un triángulo equilátero siempre tiene sus 3 ángulos agudos (60° cada uno).'},
+          {texto:'Isósceles rectángulo', correcta:false, feedback:'Isósceles es solo 2 lados iguales; aquí los 3 lados tienen la misma marca.'},
+          {texto:'Escaleno obtusángulo', correcta:false, feedback:'Escaleno significa 3 lados distintos, pero en esta figura los 3 lados están marcados como iguales.'}
+        ]},
+      { id:'m3-3', diagrama:()=>svgTrianguloClasif('escaleno-obtusangulo'),
+        prompt:'El jardín triangular junto a la entrada no tiene lados marcados como iguales y tiene un ángulo bien abierto. ¿Cómo se clasifica?',
+        opciones:[
+          {texto:'Escaleno obtusángulo', correcta:true, feedback:'Correcto: sin lados iguales es escaleno, y el ángulo mayor de 90° lo hace obtusángulo.'},
+          {texto:'Isósceles acutángulo', correcta:false, feedback:'Isósceles necesita 2 lados iguales, y acutángulo requiere que todos los ángulos sean menores de 90°; aquí no se cumple ninguna condición.'},
+          {texto:'Equilátero rectángulo', correcta:false, feedback:'Un triángulo equilátero (3 lados iguales) nunca puede tener un ángulo recto, porque sus 3 ángulos miden 60°.'}
+        ]},
+      { id:'m3-4', diagrama:()=>svgCuadrilateroClasif('rombo'),
+        prompt:'La zona de juegos tiene forma de paralelogramo con sus 4 lados iguales, pero sin ángulos rectos. ¿Qué figura es?',
+        opciones:[
+          {texto:'Rombo', correcta:true, feedback:'Correcto: 4 lados iguales y ángulos opuestos iguales (mas no rectos) es la definición de un rombo.'},
+          {texto:'Trapecio', correcta:false, feedback:'Un trapecio solo tiene un par de lados paralelos, no cuatro lados iguales.'},
+          {texto:'Cuadrado', correcta:false, feedback:'Un cuadrado también tiene 4 lados iguales, pero además sus 4 ángulos son rectos (90°), y en esta figura no lo son.'}
+        ]},
+      { id:'m3-5', diagrama:()=>svgCuadrilateroClasif('trapecio'),
+        prompt:'El sendero peatonal tiene esta forma, con un solo par de lados paralelos marcados con flechas azules. ¿Qué figura es?',
+        opciones:[
+          {texto:'Trapecio', correcta:true, feedback:'Correcto: un trapecio se define por tener exactamente un par de lados paralelos.'},
+          {texto:'Romboide', correcta:false, feedback:'Un romboide es un paralelogramo con dos pares de lados paralelos; aquí solo hay un par marcado.'},
+          {texto:'Trapezoide', correcta:false, feedback:'Un trapezoide no tiene ningún par de lados paralelos, pero en esta figura sí hay un par señalado con flechas.'}
+        ]},
+      { id:'m3-6', diagrama:()=>svgCuadrilateroClasif('trapezoide'),
+        prompt:'Este lote no tiene ningún par de lados paralelos. ¿Cómo se llama esta figura?',
+        opciones:[
+          {texto:'Trapezoide', correcta:true, feedback:'Correcto: cuando ningún lado es paralelo a otro, el cuadrilátero es un trapezoide.'},
+          {texto:'Trapecio', correcta:false, feedback:'Un trapecio necesita al menos un par de lados paralelos; en esta figura no hay ninguno.'},
+          {texto:'Rombo', correcta:false, feedback:'Un rombo es un paralelogramo con 4 lados iguales y dos pares de lados paralelos; esta figura no tiene lados paralelos.'}
+        ]}
+    ]
+  },
+  {
+    clave:'m4', numero:4, nombre:'El mosaico del parque', icono:'🔷', umbral:0.7, preguntasPorIntento:4,
+    narrativa:'Para la plaza principal, la brigada diseñará un mosaico con polígonos regulares. Hay que calcular la suma de los ángulos internos de cada pieza antes de cortarla.',
+    teoria:[
+      { titulo:'1. Suma de ángulos internos', html:`<p>En cualquier polígono de \\(n\\) lados:</p><div class="formula">\\(S = (n-2)\\times 180°\\)</div>` },
+      { titulo:'2. Ángulo interior de un polígono regular', html:`<p>Si además todos los lados y ángulos son iguales (regular), cada ángulo mide:</p><div class="formula">\\(a = \\dfrac{(n-2)\\times 180°}{n}\\)</div>` },
+      { titulo:'3. Regular vs. irregular', html:`<p><strong>Regular:</strong> todos los lados y ángulos son iguales.</p><p><strong>Irregular:</strong> los lados o ángulos no miden lo mismo.</p>` }
+    ],
+    labHTML:`
+      <h3>🧮 Mesa de diseño: ángulos del mosaico</h3>
+      <div class="campo">
+        <label for="m4-n">Número de lados de la pieza (n)</label>
+        <input type="number" id="m4-n" value="6" min="3" max="12">
+      </div>
+      <button class="btn" id="m4-calcular">Calcular suma y ángulo interior</button>
+      <div class="resultado" id="m4-res-suma">Suma de ángulos internos: 720°</div>
+      <div class="resultado secundario" id="m4-res-ang">Ángulo interior (si es regular): 120°</div>
+    `,
+    initLab(){
+      document.getElementById('m4-calcular').addEventListener('click', () => {
+        const n = parseInt(document.getElementById('m4-n').value) || 3;
+        const suma = (n-2)*180;
+        document.getElementById('m4-res-suma').textContent = `Suma de ángulos internos: ${suma}°`;
+        document.getElementById('m4-res-ang').textContent = `Ángulo interior (si es regular): ${(suma/n).toFixed(1)}°`;
+      });
+    },
+    banco:[
+      { id:'m4-1', diagrama:()=>svgPoligonoRegular(5,false),
+        prompt:'Una pieza pentagonal (5 lados) del mosaico. ¿Cuánto suman sus ángulos internos?',
+        opciones:[
+          {texto:'540°', correcta:true, feedback:'Correcto: S=(n−2)×180°=(5−2)×180°=540°.'},
+          {texto:'360°', correcta:false, feedback:'360° es la suma de los ángulos exteriores de cualquier polígono convexo, no de los ángulos internos.'},
+          {texto:'500°', correcta:false, feedback:'Revisa la fórmula (n−2)×180°: con n=5 el resultado exacto es 540°, no 500°.'}
+        ]},
+      { id:'m4-2', diagrama:()=>svgPoligonoRegular(6,false),
+        prompt:'Una pieza hexagonal regular (6 lados) del mosaico. ¿Cuánto mide cada ángulo interior?',
+        opciones:[
+          {texto:'120°', correcta:true, feedback:'Correcto: la suma es (6−2)×180°=720°, y 720° ÷ 6 = 120° por ángulo.'},
+          {texto:'720°', correcta:false, feedback:'Ese es el total de los 6 ángulos sumados, no el valor de uno solo. Falta dividir entre 6.'},
+          {texto:'60°', correcta:false, feedback:'Dividiste 720° entre 12 en lugar de entre 6, que es el número de lados del hexágono.'}
+        ]},
+      { id:'m4-3', diagrama:()=>svgPoligonoRegular(5,true),
+        prompt:'Observa esta pieza: sus lados y ángulos NO miden todos lo mismo. ¿Cómo se clasifica?',
+        opciones:[
+          {texto:'Polígono irregular', correcta:true, feedback:'Correcto: al no tener todos los lados y ángulos iguales, es un polígono irregular.'},
+          {texto:'Polígono regular', correcta:false, feedback:'En un polígono regular todos los lados y ángulos deben medir igual; en esta figura se ven claramente diferentes.'}
+        ]},
+      { id:'m4-4', diagrama:()=>svgPoligonoRegular(8,false),
+        prompt:'¿Cuántos lados tiene este polígono regular?',
+        opciones:[
+          {texto:'8 (octágono)', correcta:true, feedback:'Correcto, cuenta los vértices: son 8 lados iguales, por eso es un octágono regular.'},
+          {texto:'6 (hexágono)', correcta:false, feedback:'Un hexágono tiene 6 lados; vuelve a contar los vértices de la figura, son más de 6.'},
+          {texto:'5 (pentágono)', correcta:false, feedback:'Un pentágono tiene 5 lados; la figura mostrada tiene más vértices que un pentágono.'}
+        ]},
+      { id:'m4-5', diagrama:()=>svgPoligonoRegular(4,false),
+        prompt:'Una pieza cuadrangular del mosaico (4 lados). ¿Cuánto suman sus ángulos internos?',
+        opciones:[
+          {texto:'360°', correcta:true, feedback:'Correcto: S=(4−2)×180°=360°.'},
+          {texto:'180°', correcta:false, feedback:'180° es la suma de los ángulos internos de un triángulo (n=3), no de un cuadrilátero.'},
+          {texto:'450°', correcta:false, feedback:'Revisa la fórmula: (4−2)×180° = 360°, no 450°.'}
+        ]},
+      { id:'m4-6', diagrama:()=>svgPoligonoRegular(7,false),
+        prompt:'Una pieza heptagonal (7 lados). ¿Cuánto suman sus ángulos internos?',
+        opciones:[
+          {texto:'900°', correcta:true, feedback:'Correcto: S=(7−2)×180°=5×180°=900°.'},
+          {texto:'540°', correcta:false, feedback:'540° corresponde a un pentágono (n=5), no a un heptágono (n=7).'},
+          {texto:'720°', correcta:false, feedback:'720° corresponde a un hexágono (n=6), no a un heptágono (n=7).'}
+        ]}
+    ]
+  },
+  {
+    clave:'m5', numero:5, nombre:'El mapa del parque', icono:'🧭', umbral:0.7, preguntasPorIntento:4,
+    narrativa:'Con el terreno medido y las figuras clasificadas, la brigada ubica cada elemento del parque en un plano cartesiano para entregar el mapa final a la comunidad.',
+    teoria:[
+      { titulo:'1. El plano cartesiano', html:`<p>Se forma con dos ejes perpendiculares: el eje \\(x\\) (horizontal) y el eje \\(y\\) (vertical). Se cruzan en el <strong>origen</strong> (0,0).</p>` },
+      { titulo:'2. Coordenadas y cuadrantes', html:`<p>Un punto se ubica con el par \\((x, y)\\). El signo de cada coordenada indica el cuadrante:</p>
+        <ul>
+          <li>Cuadrante I: \\(x>0, y>0\\)</li>
+          <li>Cuadrante II: \\(x<0, y>0\\)</li>
+          <li>Cuadrante III: \\(x<0, y<0\\)</li>
+          <li>Cuadrante IV: \\(x>0, y<0\\)</li>
+        </ul>` }
+    ],
+    labHTML:`
+      <h3>🧭 Mesa de diseño: ubica un elemento del parque</h3>
+      <div class="grid-2">
+        <div class="campo"><label for="m5-x">Coordenada x</label><input type="number" id="m5-x" value="4"></div>
+        <div class="campo"><label for="m5-y">Coordenada y</label><input type="number" id="m5-y" value="3"></div>
+      </div>
+      <button class="btn" id="m5-calcular">Ubicar punto en el mapa</button>
+      <div id="m5-diagrama" class="diagrama-marco" style="margin-top:12px;"></div>
+      <div class="resultado" id="m5-res">El punto está en el cuadrante I</div>
+    `,
+    initLab(){
+      const render = () => {
+        const x = parseInt(document.getElementById('m5-x').value) || 0;
+        const y = parseInt(document.getElementById('m5-y').value) || 0;
+        document.getElementById('m5-diagrama').innerHTML = svgPlano(x, y, false);
+        let cuadrante = 'sobre uno de los ejes';
+        if(x>0 && y>0) cuadrante = 'cuadrante I';
+        else if(x<0 && y>0) cuadrante = 'cuadrante II';
+        else if(x<0 && y<0) cuadrante = 'cuadrante III';
+        else if(x>0 && y<0) cuadrante = 'cuadrante IV';
+        document.getElementById('m5-res').textContent = `El punto (${x}, ${y}) está en el ${cuadrante}`;
+      };
+      document.getElementById('m5-calcular').addEventListener('click', render);
+      render();
+    },
+    banco:[
+      { id:'m5-1', diagrama:()=>svgPlano(3,2,false),
+        prompt:'La banca del parque se ubicó en el punto (3, 2). ¿En qué cuadrante está?',
+        opciones:[
+          {texto:'Cuadrante I', correcta:true, feedback:'Correcto: con x>0 y y>0, el punto está en el cuadrante I.'},
+          {texto:'Cuadrante II', correcta:false, feedback:'El cuadrante II necesita x negativa; aquí x=3 es positiva.'},
+          {texto:'Cuadrante IV', correcta:false, feedback:'El cuadrante IV necesita y negativa; aquí y=2 es positiva.'}
+        ]},
+      { id:'m5-2', diagrama:()=>svgPlano(-4,5,false),
+        prompt:'El árbol principal quedó en (-4, 5). ¿En qué cuadrante está?',
+        opciones:[
+          {texto:'Cuadrante II', correcta:true, feedback:'Correcto: con x<0 y y>0, el punto está en el cuadrante II.'},
+          {texto:'Cuadrante I', correcta:false, feedback:'El cuadrante I necesita x positiva; aquí x=-4 es negativa.'},
+          {texto:'Cuadrante III', correcta:false, feedback:'El cuadrante III necesita y negativa; aquí y=5 es positiva.'}
+        ]},
+      { id:'m5-3', diagrama:()=>svgPlano(-2,-6,false),
+        prompt:'El depósito de herramientas quedó en (-2, -6). ¿En qué cuadrante está?',
+        opciones:[
+          {texto:'Cuadrante III', correcta:true, feedback:'Correcto: con x<0 y y<0, el punto está en el cuadrante III.'},
+          {texto:'Cuadrante II', correcta:false, feedback:'El cuadrante II necesita y positiva; aquí y=-6 es negativa.'},
+          {texto:'Cuadrante IV', correcta:false, feedback:'El cuadrante IV necesita x positiva; aquí x=-2 es negativa.'}
+        ]},
+      { id:'m5-4', diagrama:()=>svgPlano(5,-1,false),
+        prompt:'La caneca de reciclaje quedó en (5, -1). ¿En qué cuadrante está?',
+        opciones:[
+          {texto:'Cuadrante IV', correcta:true, feedback:'Correcto: con x>0 y y<0, el punto está en el cuadrante IV.'},
+          {texto:'Cuadrante I', correcta:false, feedback:'El cuadrante I necesita y positiva; aquí y=-1 es negativa.'},
+          {texto:'Cuadrante III', correcta:false, feedback:'El cuadrante III necesita x negativa; aquí x=5 es positiva.'}
+        ]},
+      { id:'m5-5', diagrama:()=>svgPlano(4,3,true),
+        prompt:'¿Cuáles son las coordenadas del punto marcado en el mapa?',
+        opciones:[
+          {texto:'(4, 3)', correcta:true, feedback:'Correcto: primero la coordenada x (horizontal, 4) y luego la y (vertical, 3).'},
+          {texto:'(3, 4)', correcta:false, feedback:'Invertiste el orden: la primera coordenada siempre es la horizontal (x) y la segunda es la vertical (y).'},
+          {texto:'(4, -3)', correcta:false, feedback:'El punto está arriba del eje x, así que su coordenada y debe ser positiva, no negativa.'}
+        ]},
+      { id:'m5-6', diagrama:()=>svgPlano(0,0,false),
+        prompt:'¿Cómo se llama el punto exacto donde se cruzan el eje x y el eje y?',
+        opciones:[
+          {texto:'Origen', correcta:true, feedback:'Correcto: el origen es el punto (0,0), donde se cruzan ambos ejes.'},
+          {texto:'Cuadrante', correcta:false, feedback:'Un cuadrante es cada una de las 4 regiones que forman los ejes, no el punto donde se cruzan.'},
+          {texto:'Vector', correcta:false, feedback:'Un vector representa una magnitud con dirección; no es el nombre del punto de cruce de los ejes.'}
+        ]}
+    ]
+  }
+];
+
+/* =========================================================================
+   ESTADO Y PERSISTENCIA
+   ========================================================================= */
+const CLAVE_ALMACEN = 'obrageo_progreso_v2';
+const estado = {
+  completadas: {},   // { m1: {estrellas:3} , ... }
+  desbloqueadas: { m1:true }
+};
+
+function cargarEstado(){
+  try{
+    const crudo = localStorage.getItem(CLAVE_ALMACEN);
+    if(!crudo) return;
+    const datos = JSON.parse(crudo);
+    if(datos.completadas) Object.assign(estado.completadas, datos.completadas);
+    if(datos.desbloqueadas) Object.assign(estado.desbloqueadas, datos.desbloqueadas);
+  }catch(e){ /* progreso no disponible: se inicia en blanco */ }
+}
+function guardarEstado(){
+  try{ localStorage.setItem(CLAVE_ALMACEN, JSON.stringify(estado)); }catch(e){ /* almacenamiento no disponible */ }
+}
+
+/* =========================================================================
+   CONSTRUCCIÓN DE LA INTERFAZ
+   ========================================================================= */
+const quizActual = {}; // clave -> array de {pregunta, opcionesBarajadas, seleccion}
+
+function construirPortada(){
+  const cont = document.getElementById('tab-portada');
+  cont.innerHTML = `
+    <div class="hoja">
+      <div class="mision-encabezado">
+        <span class="mision-icono">🏗️</span>
+        <div>
+          <h2>Bienvenida a la brigada, futura ingeniera / futuro ingeniero</h2>
+          <p class="mision-narrativa">La comunidad les encargó diseñar el <strong>Parque Renacer</strong>. Para lograrlo deberán superar 5 misiones de geometría, cada una con retos que cambian de orden y de preguntas cada vez que las intenten.</p>
+        </div>
+      </div>
+      <div class="grid-2">
+        ${MISIONES.map(m => `
+          <div class="ficha">
+            <h3>${m.icono} Misión ${m.numero}: ${m.nombre}</h3>
+            <p style="font-size:0.88rem; color:var(--tinta-suave);">${m.narrativa}</p>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn ancho-auto" id="btn-comenzar" style="margin-top:6px;">🚀 Comenzar la Misión 1</button>
+    </div>
+  `;
+  document.getElementById('btn-comenzar').addEventListener('click', () => irAMision('m1'));
+}
+
+function construirDocente(){
+  const cont = document.getElementById('tab-docente');
+  cont.innerHTML = `
+    <div class="hoja">
+      <h2>📘 Ficha para el docente</h2>
+      <div class="ficha">
+        <h3>Cómo funciona ObraGeo</h3>
+        <ul>
+          <li>Cada misión tiene un banco de 6 preguntas; en cada intento se sortean ${MISIONES[0].preguntasPorIntento} al azar y en orden distinto, con las opciones también mezcladas.</li>
+          <li>Se necesita al menos 70% de aciertos para desbloquear la siguiente misión.</li>
+          <li>Cada respuesta —correcta o incorrecta— muestra una explicación específica del acierto o del error cometido.</li>
+          <li>El progreso se guarda en el navegador del estudiante (no se comparte entre dispositivos).</li>
+        </ul>
+      </div>
+      <div class="ficha">
+        <h3>📊 Rúbrica sugerida (100 pts)</h3>
+        <ul>
+          <li><strong>Exactitud matemática (35 pts):</strong> fórmulas de área, perímetro y conversiones.</li>
+          <li><strong>Razonamiento espacial (30 pts):</strong> clasificación de polígonos y sus propiedades.</li>
+          <li><strong>Uso de las mesas de diseño (20 pts):</strong> exploración activa de las calculadoras interactivas.</li>
+          <li><strong>Progresión autónoma (15 pts):</strong> avance por las 5 misiones y manejo de reintentos.</li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+function construirMisiones(){
+  const cont = document.getElementById('misiones-contenedor');
+  cont.innerHTML = MISIONES.map(m => `
+    <div id="tab-${m.clave}" class="tab-content">
+      <div class="hoja">
+        <div class="mision-encabezado">
+          <span class="mision-icono">${m.icono}</span>
+          <div>
+            <h2>Misión ${m.numero}: ${m.nombre}</h2>
+            <p class="mision-narrativa">${m.narrativa}</p>
+          </div>
+        </div>
+
+        <div class="grid-2" id="teoria-${m.clave}"></div>
+
+        <div class="mesa">${m.labHTML}</div>
+
+        <div class="reto-titulo">
+          <h3>🎯 Reto de la misión ${m.numero}</h3>
+          <span class="chip-info" id="chip-${m.clave}">4 preguntas · 70% para avanzar</span>
+        </div>
+        <div id="quiz-${m.clave}"></div>
+        <button class="btn secundario" id="verificar-${m.clave}">Entregar reto y validar avance</button>
+
+        <div class="resumen-mision exito" id="exito-${m.clave}">
+          <h3>🎉 ¡Misión superada!</h3>
+          <p id="exito-texto-${m.clave}"></p>
+          <div class="resumen-acciones">
+            <button class="btn ancho-auto" id="siguiente-${m.clave}">Ir a la siguiente misión</button>
+            <button class="btn secundario ancho-auto" id="repetir-exito-${m.clave}">Intentar con nuevas preguntas</button>
+          </div>
+        </div>
+        <div class="resumen-mision reintentar" id="reintentar-${m.clave}">
+          <h3>🔧 Casi lo logras</h3>
+          <p id="reintentar-texto-${m.clave}"></p>
+          <div class="resumen-acciones">
+            <button class="btn ancho-auto" id="repetir-${m.clave}">Reintentar con preguntas nuevas</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  MISIONES.forEach(m => {
+    document.getElementById(`teoria-${m.clave}`).innerHTML = m.teoria.map(t => `
+      <div class="ficha"><h3>${t.titulo}</h3>${t.html}</div>
+    `).join('');
+    m.initLab();
+    generarQuiz(m.clave);
+    document.getElementById(`verificar-${m.clave}`).addEventListener('click', () => calificarMision(m.clave));
+    document.getElementById(`repetir-${m.clave}`).addEventListener('click', () => reiniciarReto(m.clave));
+    document.getElementById(`repetir-exito-${m.clave}`).addEventListener('click', () => reiniciarReto(m.clave));
+    const sig = document.getElementById(`siguiente-${m.clave}`);
+    if(sig){
+      const idx = MISIONES.findIndex(x => x.clave === m.clave);
+      const siguienteClave = MISIONES[idx+1] ? MISIONES[idx+1].clave : null;
+      sig.addEventListener('click', () => { if(siguienteClave) irAMision(siguienteClave); });
+      if(!siguienteClave) sig.textContent = 'Brigada completa 🏆';
+    }
+  });
+}
+
+function generarQuiz(clave){
+  const mision = MISIONES.find(m => m.clave === clave);
+  const preguntas = tomarAlAzar(mision.banco, mision.preguntasPorIntento);
+  quizActual[clave] = preguntas.map(p => ({
+    pregunta: p,
+    opciones: barajar(p.opciones),
+    seleccion: undefined
+  }));
+
+  const cont = document.getElementById(`quiz-${clave}`);
+  cont.innerHTML = '';
+  quizActual[clave].forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'quiz-card';
+    card.id = `quizcard-${clave}-${idx}`;
+    const diagramaHTML = item.pregunta.diagrama ? `<div class="diagrama-marco">${item.pregunta.diagrama()}</div>` : '';
+    card.innerHTML = `
+      ${diagramaHTML}
+      <h4>${idx+1}. ${item.pregunta.prompt}</h4>
+      <div class="options-group"></div>
+      <div class="feedback-msg"></div>
+    `;
+    const grupo = card.querySelector('.options-group');
+    item.opciones.forEach((op, i) => {
+      const boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'option-btn';
+      boton.textContent = `${String.fromCharCode(65+i)}) ${op.texto}`;
+      boton.addEventListener('click', () => {
+        if(card.dataset.bloqueada === '1') return;
+        item.seleccion = i;
+        grupo.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        boton.classList.add('selected');
+      });
+      grupo.appendChild(boton);
+    });
+    cont.appendChild(card);
+  });
+
+  renderMath(cont);
+  document.getElementById(`exito-${clave}`).style.display = 'none';
+  document.getElementById(`reintentar-${clave}`).style.display = 'none';
+}
+
+function calificarMision(clave){
+  const mision = MISIONES.find(m => m.clave === clave);
+  const items = quizActual[clave];
+  let aciertos = 0;
+  let sinResponder = 0;
+
+  items.forEach((item, idx) => {
+    const card = document.getElementById(`quizcard-${clave}-${idx}`);
+    const fb = card.querySelector('.feedback-msg');
+    const botones = card.querySelectorAll('.option-btn');
+    card.dataset.bloqueada = '1';
+    botones.forEach(b => b.disabled = true);
+
+    const idxCorrecta = item.opciones.findIndex(o => o.correcta);
+
+    if(item.seleccion === undefined){
+      sinResponder++;
+      botones[idxCorrecta].classList.add('marca-correcta');
+      fb.className = 'feedback-msg warn';
+      fb.textContent = 'No marcaste ninguna opción. La respuesta correcta se resaltó en verde.';
+      fb.style.display = 'block';
+      card.classList.add('mal');
+      return;
+    }
+
+    const elegida = item.opciones[item.seleccion];
+    botones[item.seleccion].classList.add(elegida.correcta ? 'marca-correcta' : 'marca-incorrecta');
+    if(!elegida.correcta) botones[idxCorrecta].classList.add('marca-correcta');
+
+    fb.className = 'feedback-msg ' + (elegida.correcta ? 'correct' : 'incorrect');
+    fb.textContent = (elegida.correcta ? '✔ ' : '✘ ') + elegida.feedback;
+    fb.style.display = 'block';
+    card.classList.add(elegida.correcta ? 'ok' : 'mal');
+    if(elegida.correcta) aciertos++;
+  });
+
+  const total = items.length;
+  const proporcion = aciertos / total;
+  const estrellas = proporcion === 1 ? 3 : proporcion >= mision.umbral ? 2 : proporcion >= 0.5 ? 1 : 0;
+
+  document.getElementById(`verificar-${clave}`).style.display = 'none';
+
+  if(proporcion >= mision.umbral){
+    estado.completadas[clave] = { estrellas };
+    const idx = MISIONES.findIndex(m => m.clave === clave);
+    if(MISIONES[idx+1]) estado.desbloqueadas[MISIONES[idx+1].clave] = true;
+    guardarEstado();
+    actualizarSendero();
+
+    const cajaExito = document.getElementById(`exito-${clave}`);
+    document.getElementById(`exito-texto-${clave}`).textContent = `Obtuviste ${aciertos} de ${total} respuestas correctas (${Math.round(proporcion*100)}%). ¡La misión ${mision.numero} queda completada!`;
+    cajaExito.style.display = 'block';
+    lanzarConfeti();
+    cajaExito.scrollIntoView({ behavior:'smooth', block:'center' });
+  } else {
+    const cajaReintentar = document.getElementById(`reintentar-${clave}`);
+    let mensaje = `Obtuviste ${aciertos} de ${total} respuestas correctas (${Math.round(proporcion*100)}%). Necesitas al menos ${Math.round(mision.umbral*100)}% para avanzar.`;
+    if(sinResponder>0) mensaje += ` Dejaste ${sinResponder} pregunta(s) sin responder.`;
+    document.getElementById(`reintentar-texto-${clave}`).textContent = mensaje;
+    cajaReintentar.style.display = 'block';
+    cajaReintentar.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+}
+
+function reiniciarReto(clave){
+  document.getElementById(`verificar-${clave}`).style.display = 'inline-block';
+  generarQuiz(clave);
+  document.getElementById(`tab-${clave}`).scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* =========================================================================
+   NAVEGACIÓN Y SENDERO DE PROGRESO
+   ========================================================================= */
+function construirSendero(){
+  const cont = document.getElementById('estaciones');
+  const items = [{ clave:'portada', numero:'🏠', nombre:'Portada', esPortada:true }]
+    .concat(MISIONES.map(m => ({ clave:m.clave, numero:m.numero, nombre:m.nombre, icono:m.icono })))
+    .concat([{ clave:'docente', numero:'📘', nombre:'Ficha docente', esDocente:true }]);
+
+  cont.innerHTML = items.map(it => `
+    <button class="estacion" data-clave="${it.clave}" role="tab" aria-selected="false">
+      <span class="num">${it.esPortada ? '🏠' : it.esDocente ? '📘' : it.numero}</span>
+      <span class="estacion-nombre">${it.esPortada ? 'Inicio' : it.esDocente ? 'Docente' : it.nombre}</span>
+      <span class="estacion-estrellas" data-estrellas="${it.clave}"></span>
+    </button>
+  `).join('');
+
+  cont.querySelectorAll('.estacion').forEach(btn => {
+    btn.addEventListener('click', () => irAMision(btn.dataset.clave));
+  });
+}
+
+function actualizarSendero(){
+  const botones = document.querySelectorAll('.estacion');
+  let completadasCount = 0;
+  botones.forEach(btn => {
+    const clave = btn.dataset.clave;
+    btn.classList.remove('bloqueada', 'completa');
+    if(clave === 'portada' || clave === 'docente') return;
+    const bloqueada = !estado.desbloqueadas[clave];
+    const completa = !!estado.completadas[clave];
+    if(bloqueada) btn.classList.add('bloqueada');
+    if(completa){
+      btn.classList.add('completa');
+      completadasCount++;
+      const estrellasSpan = btn.querySelector('.estacion-estrellas');
+      estrellasSpan.textContent = '★'.repeat(estado.completadas[clave].estrellas) + '☆'.repeat(3 - estado.completadas[clave].estrellas);
+    }
+  });
+  const pct = Math.round((completadasCount / MISIONES.length) * 100);
+  document.getElementById('progresoFill').style.width = pct + '%';
+  document.getElementById('progresoPct').textContent = pct + '%';
+}
+
+function irAMision(clave){
+  if(clave !== 'portada' && clave !== 'docente' && !estado.desbloqueadas[clave]){
+    alert('🔒 Esta misión todavía está bloqueada. Completa la misión anterior con al menos 70% de aciertos para desbloquearla.');
+    return;
+  }
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  const destino = document.getElementById(clave === 'portada' ? 'tab-portada' : clave === 'docente' ? 'tab-docente' : `tab-${clave}`);
+  if(destino) destino.classList.add('active');
+
+  document.querySelectorAll('.estacion').forEach(b => {
+    b.classList.remove('activa');
+    b.setAttribute('aria-selected', 'false');
+  });
+  const btnActivo = document.querySelector(`.estacion[data-clave="${clave}"]`);
+  if(btnActivo){ btnActivo.classList.add('activa'); btnActivo.setAttribute('aria-selected','true'); }
+
+  window.scrollTo({ top:0, behavior:'smooth' });
+  renderMath(document.getElementById('contenido-principal'));
+}
+
+/* =========================================================================
+   INICIALIZACIÓN
+   ========================================================================= */
+window.addEventListener('DOMContentLoaded', () => {
+  cargarEstado();
+  construirPortada();
+  construirMisiones();
+  construirDocente();
+  construirSendero();
+  actualizarSendero();
+  irAMision('portada');
+  renderMath(document.body);
+});
+window.addEventListener('load', () => renderMath(document.body));
+</script>
+</body>
+</html>
